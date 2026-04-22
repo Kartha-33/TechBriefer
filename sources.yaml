@@ -1,0 +1,235 @@
+# ============================================================
+# SOURCES — Edit this file to control what the agent reads
+# ============================================================
+# To disable a source, add a "#" at the start of the line.
+# To add a new one, just copy the format and paste a new entry.
+
+# ── Reddit ──────────────────────────────────────────────────
+# These are fetched via Reddit's public RSS feed (no login needed).
+# Format: https://www.reddit.com/r/SUBREDDIT/top.rss?t=day&limit=10
+reddit:
+  subreddits:
+    # Tech & AI
+    - technology         # General tech news
+    - MachineLearning    # AI research papers and discussions
+    - artificial         # AI news and discussion
+    - singularity        # Futurism & cutting-edge tech
+    - programming        # Software development
+    - compsci            # Computer science
+    - LocalLLaMA         # Open-source LLM news
+    
+    # Biology & Life Sciences
+    - biology            # General biology news
+    - bioinformatics     # Computational biology
+    - biotech            # Biotechnology news
+    - longevity          # Aging research and life extension
+    - genetics           # Genetics research
+    - Neuroscience       # Brain and neuroscience
+    
+    # Startups & Business
+    - startups           # Startup news and discussions
+    - Entrepreneur       # Entrepreneurship
+    - venturecapital     # VC funding and trends
+    - SaaS               # SaaS business news
+    
+    # Science
+    - science            # Scientific breakthroughs
+    - Physics            # Physics news
+    - Futurology         # Future technology
+    
+  posts_per_subreddit: 5   # Top N posts to grab per subreddit
+  min_score: 100           # Ignore posts with fewer than this many upvotes
+
+
+# ── Twitter / X (via Nitter RSS — free, no account needed) ──
+# Nitter is a privacy-friendly Twitter front-end that provides RSS feeds.
+# If one Nitter instance is blocked, the script tries the next one.
+twitter:
+  enabled: true
+  # List of Twitter handles to follow (no "@" symbol needed)
+  accounts:
+    # AI Researchers & Leaders
+    - sama              # Sam Altman (OpenAI CEO)
+    - karpathy          # Andrej Karpathy (AI researcher)
+    - ylecun            # Yann LeCun (Meta AI chief)
+    - geoffreyhinton    # Geoffrey Hinton
+    - demishassabis     # Demis Hassabis (Google DeepMind)
+    - OpenAI            # OpenAI official
+    - AnthropicAI       # Anthropic official
+    - GoogleDeepMind    # Google DeepMind official
+    - MistralAI         # Mistral AI
+    
+    # Biology & Life Sciences
+    - EricTopol         # Eric Topol (genomics, digital medicine)
+    - dgmacarthur       # Daniel MacArthur (genomics)
+    - Bill_Hanage       # Bill Hanage (epidemiology)
+    - edyong209          # Ed Yong (science journalist)
+    - Neuro_Skeptic     # Neuroscience researcher
+    - ProfAliceRoberts  # Alice Roberts (human evolution)
+    
+    # Startups & VCs
+    - pmarca            # Marc Andreessen (a16z)
+    - balajis           # Balaji Srinivasan
+    - paulg             # Paul Graham (YC)
+    - naval             # Naval Ravikant
+    - ycombinator       # Y Combinator official
+    - a16z              # Andreessen Horowitz
+    - sequoia           # Sequoia Capital
+    - GV                # Google Ventures
+    - patio11           # Patrick McKenzie (tech business)
+    
+    # Tech & General
+    - elonmusk          # Elon Musk
+    
+  tweets_per_account: 3  # Max tweets to grab per account
+  # Nitter instances — the script tries each in order until one works
+  nitter_instances:
+    - https://nitter.net
+    - https://nitter.privacydev.net
+    - https://nitter.poast.org
+    - https://nitter.catsarch.com
+
+
+# ── Tech & Science Blogs (RSS feeds) ────────────────────────
+# All of these are 100% free public RSS feeds.
+blogs:
+  feeds:
+    - name: "Hacker News Top Stories"
+      url: "https://news.ycombinator.com/rss"
+      category: "tech"
+
+    - name: "Ars Technica"
+      url: "https://feeds.arstechnica.com/arstechnica/index"
+      category: "tech"
+
+    - name: "MIT Technology Review"
+      url: "https://www.technologyreview.com/feed/"
+      category: "science"
+
+    - name: "The Verge"
+      url: "https://www.theverge.com/rss/index.xml"
+      category: "tech"
+
+    - name: "Wired"
+      url: "https://www.wired.com/feed/rss"
+      category: "tech"
+
+    - name: "TechCrunch"
+      url: "https://techcrunch.com/feed/"
+      category: "tech"
+
+    - name: "Nature News"
+      url: "https://www.nature.com/nature.rss"
+      category: "science"
+
+    - name: "Quanta Magazine"
+      url: "https://api.quantamagazine.org/feed/"
+      category: "science"
+
+    - name: "IEEE Spectrum"
+      url: "https://spectrum.ieee.org/feeds/feed.rss"
+      category: "tech"
+
+    - name: "Hugging Face Blog"
+      url: "https://huggingface.co/blog/feed.xml"
+      category: "ai"
+
+    - name: "Google AI Blog"
+      url: "https://blog.research.google/feeds/posts/default"
+      category: "ai"
+
+    - name: "OpenAI News"
+      url: "https://openai.com/news/rss.xml"
+      category: "ai"
+
+    # ── Major News Outlets ────────────────────────────────────
+
+    - name: "Wall Street Journal"
+      url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
+      category: "news"
+
+    - name: "Economic Times (India)"
+      url: "https://economictimes.indiatimes.com/rssfeedstopstories.cms"
+      category: "news"
+
+    - name: "Financial Times"
+      url: "https://www.ft.com/?format=rss"
+      category: "news"
+
+    - name: "Reuters Technology"
+      url: "https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best"
+      category: "news"
+
+    - name: "Bloomberg Technology"
+      url: "https://www.bloomberg.com/technology"
+      category: "news"
+
+    - name: "The Guardian Tech"
+      url: "https://www.theguardian.com/technology/rss"
+      category: "news"
+
+    - name: "BBC News - Technology"
+      url: "http://feeds.bbci.co.uk/news/technology/rss.xml"
+      category: "news"
+
+    - name: "CNN Tech"
+      url: "http://rss.cnn.com/rss/cnn_tech.rss"
+      category: "news"
+
+    - name: "New York Times Technology"
+      url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"
+      category: "news"
+
+    - name: "The Washington Post Tech"
+      url: "https://feeds.washingtonpost.com/rss/business/technology"
+      category: "news"
+
+    # ── Biology & Life Sciences ─────────────────────────────────
+
+    - name: "Nature Biology"
+      url: "https://www.nature.com/nbt.rss"
+      category: "biology"
+
+    - name: "Cell Journal"
+      url: "https://www.cell.com/cell/current.rss"
+      category: "biology"
+
+    - name: "PLOS Biology"
+      url: "https://journals.plos.org/plosbiology/feed/atom"
+      category: "biology"
+
+    - name: "The Scientist"
+      url: "https://www.the-scientist.com/rss"
+      category: "biology"
+
+    - name: "bioRxiv (Preprints)"
+      url: "https://connect.biorxiv.org/biorxiv_xml.php?subject=all"
+      category: "biology"
+
+    - name: "Science Daily - Biology"
+      url: "https://www.sciencedaily.com/rss/plants_animals.xml"
+      category: "biology"
+
+    # ── Startups & Venture Capital ──────────────────────────────
+
+    - name: "Y Combinator Blog"
+      url: "https://www.ycombinator.com/blog/feed"
+      category: "startups"
+
+    - name: "Andreessen Horowitz (a16z)"
+      url: "https://a16z.com/feed/"
+      category: "startups"
+
+    - name: "Crunchbase News"
+      url: "https://news.crunchbase.com/feed/"
+      category: "startups"
+
+    - name: "VentureBeat"
+      url: "https://venturebeat.com/feed/"
+      category: "startups"
+
+    - name: "First Round Review"
+      url: "https://review.firstround.com/rss"
+      category: "startups"
+
+  articles_per_feed: 3    # Top N articles to grab per blog

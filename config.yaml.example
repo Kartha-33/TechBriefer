@@ -1,0 +1,109 @@
+# ============================================================
+# CONFIG — Your personal settings for the Daily News Agent
+# ============================================================
+# IMPORTANT: Copy this file to config.yaml and customize it:
+#   cp config.yaml.example config.yaml
+
+# ── Obsidian Vault ───────────────────────────────────────────
+obsidian:
+  # Where your Obsidian vault lives.
+  # The default below uses iCloud so your notes sync to iPhone for free.
+  # If you want a different location, replace this path.
+  vault_path: "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/TechBrief"
+
+  # Which folder inside the vault to save daily briefs
+  daily_notes_folder: "01 Daily Briefs"
+
+  # Date format for the note filename (e.g. "2026-04-22 Tech Brief")
+  note_date_format: "%Y-%m-%d"
+
+  # Note title format
+  note_title_format: "Tech Brief — {weekday}, {date}"
+
+
+# ── LLM (the AI brain that writes summaries) ────────────────
+llm:
+  # Options:
+  #   "ollama"  — runs 100% on your Mac, completely free, completely private
+  #   "openai"  — OpenAI-compatible API (works for Kimi, GLM, OpenAI, Groq, etc.)
+  provider: "ollama"
+
+  # ── If provider is "ollama" ──
+  ollama:
+    # The model to use. Good free options:
+    #   "llama3.2"       — fast, 3B params, great for summaries
+    #   "qwen2.5:7b"     — smarter, 7B params, better writing quality
+    #   "gemma3:4b"      — Google's model, good balance
+    #   "mistral"        — excellent at structured output
+    model: "llama3.2"
+    base_url: "http://localhost:11434"
+
+  # ── If provider is "openai" (also works for Kimi, GLM, Groq, etc.) ──
+  openai:
+    # Set your API key here (or in a .env file as OPENAI_API_KEY)
+    api_key: ""  # or set env var OPENAI_API_KEY
+
+    # For Kimi (Moonshot AI): https://platform.moonshot.cn/
+    #   base_url: "https://api.moonshot.cn/v1"
+    #   model: "moonshot-v1-8k"
+    #
+    # For Zhipu GLM:  https://open.bigmodel.cn/
+    #   base_url: "https://open.bigmodel.cn/api/paas/v4/"
+    #   model: "glm-4-flash"  ← this one is FREE on Zhipu
+    #
+    # For Groq (free tier, very fast): https://console.groq.com/
+    #   base_url: "https://api.groq.com/openai/v1"
+    #   model: "llama-3.3-70b-versatile"
+    base_url: "https://api.openai.com/v1"
+    model: "gpt-4o-mini"
+
+
+# ── Brief Content Settings ───────────────────────────────────
+brief:
+  # How many total stories to include in the brief
+  max_stories: 20
+
+  # How many words in the final note (approximate)
+  # "short" ~600 words, "medium" ~1200 words, "long" ~2000 words
+  length: "medium"
+
+  # Categories to always include
+  categories:
+    - "Top Stories"
+    - "AI & Machine Learning"
+    - "Biology & Life Sciences"
+    - "Startups & Venture Capital"
+    - "Science & Research"
+    - "Reddit Buzz"
+    - "Tweets Worth Reading"
+    - "Deep Dive"   # One expanded story per day
+
+  # Whether to include article links in the note
+  include_links: true
+
+  # Whether to fetch and read the full article text (better summaries, slower)
+  fetch_full_articles: true
+
+  # Max characters to read from each article (to keep things fast)
+  max_article_chars: 3000
+
+
+# ── Schedule ─────────────────────────────────────────────────
+schedule:
+  # Time to generate the brief every day (24-hour format)
+  time: "09:00"
+
+
+# ── Advanced ─────────────────────────────────────────────────
+advanced:
+  # How long to wait (seconds) before giving up on a slow website
+  request_timeout: 15
+
+  # Seconds to wait between requests (be polite to websites)
+  request_delay: 1.0
+
+  # Where to save logs (helpful if something goes wrong)
+  log_file: "~/Library/Logs/daily-news-agent.log"
+
+  # Whether to print progress to the terminal when running manually
+  verbose: true
