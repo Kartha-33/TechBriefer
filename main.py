@@ -12,6 +12,7 @@ import argparse
 import logging
 import sys
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import yaml
@@ -23,6 +24,7 @@ import ranker
 import scraper
 import summarizer
 import writer
+from entities import extract_entities
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
@@ -91,6 +93,14 @@ def run(force: bool = False, dry_run: bool = False) -> None:
     deep.sort(key=lambda s: summaries.get(s.url, (0, ""))[0], reverse=True)
     print(f"      summary stage: {time.time()-t3:.1f}s")
 
+    today = datetime.now().strftime("%Y-%m-%d")
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    yesterday_entities = db.get_entities_for(yesterday)
+    today_top_entities: set[str] = set()
+    for s in deep[:5]:
+        today_top_entities.update(extract_entities((s.title or "") + " " + (s.summary or "")))
+    continuing = sorted(yesterday_entities & today_top_entities)
+
     t4 = time.time()
     content = writer.build_note(
         deep=deep,
@@ -98,6 +108,7 @@ def run(force: bool = False, dry_run: bool = False) -> None:
         quick_hits=quick_pool,
         config=cfg,
         total_sources=len({s.source for s in all_stories}),
+        continuing_entities=continuing,
     )
     if dry_run:
         print("[7/7] --dry-run: not writing file. Preview:\n")
@@ -107,10 +118,18 @@ def run(force: bool = False, dry_run: bool = False) -> None:
 
     note_path = writer.write_obsidian_note(content, cfg, deep + quick_pool)
     db.mark_seen(deep + quick_pool)
+
+    today_all_entities: set[str] = set()
+    for s in deep + quick_pool:
+        today_all_entities.update(extract_entities((s.title or "") + " " + (s.summary or "")))
+    db.save_daily_entities(today, today_all_entities)
+
     print(f"[7/7] Wrote {note_path} ({time.time()-t4:.1f}s)")
     print(f"\nDone in {time.time()-t0:.1f}s total.")
     print(f"   {len(deep)} deep summaries + {len(quick_pool)} quick hits")
     print(f"   {len({s.source for s in deep + quick_pool})} unique sources")
+    if continuing:
+        print(f"   continuing from yesterday: {', '.join(continuing[:6])}")
 
 
 def _setup_logging() -> None:

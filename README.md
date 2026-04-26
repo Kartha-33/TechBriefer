@@ -13,24 +13,42 @@
 
 ## What you get
 
-A note like `01 Daily Briefs/2026-04-26 Tech Brief.md` that opens in Obsidian with five clean sections:
+A note like `01 Daily Briefs/2026-04-26 Tech Brief.md` that opens in Obsidian with the following structure:
 
 ```
 ─────────────────────────────────────────────
    Second Brain Brief — Sun, Apr 26, 2026
-   35 stories · 47 sources · 3m 26s
+   33 stories · 48 sources · 3m 57s
 ─────────────────────────────────────────────
 
-  Top Stories          5  · image + 2-sentence LLM summary
-  AI & ML              5  · 2-sentence LLM summary
-  Biology & Life Sci   4  · 2-sentence LLM summary
-  Startups & VC        4  · 2-sentence LLM summary
-  Quick Hits          ~25 · RSS-derived one-liner (no LLM)
+  Continuing from yesterday   [[OpenAI]] · [[Claude]] · [[CRISPR]]
+  Top Stories          5      image + 2-sentence LLM summary
+  AI & ML              1+5    Featured arXiv paper pin + 5 stories
+  Biology & Life Sci   1+4    Featured bioRxiv paper pin + 4 stories
+  Startups & VC        4      2-sentence LLM summary
+  Quick Hits          ~25     grouped by shared entity (e.g.
+                              "Anthropic (3)", "CRISPR (2)", "Other")
 ```
 
 Every story links back to the original source, gets `[[wikilinks]]` for any
 people / orgs / topics the regex catches, and shows which feed it came from
 so you can audit anything you read.
+
+### What each block does
+
+- **Continuing from yesterday** — entities that appeared in yesterday's brief
+  *and* in today's top 5 stories. SQLite-backed; turns the feed into a
+  narrative instead of a flat daily snapshot.
+- **Featured paper pin** — within AI and Biology, the highest-scored
+  preprint from arXiv / bioRxiv / medRxiv is pulled to the top of the
+  section and labeled, so research never gets buried under blog posts.
+- **Cluster dedup** — when 3 sources cover the same launch, the brief shows
+  it once, picking the highest-trust source (e.g., DeepMind's blog over a
+  TechCrunch recap). The cross-feed coverage still boosts the score, so
+  consensus stories still rank higher.
+- **Entity-grouped Quick Hits** — the ~25-story roundup at the bottom is
+  organized by shared entity (`### Anthropic (3)`, `### CRISPR (2)`, …)
+  instead of one flat bullet list. Makes scanning much faster.
 
 ---
 
@@ -40,15 +58,15 @@ so you can audit anything you read.
 flowchart LR
     A([main.py]) --> B[scraper.fetch_all<br/>10-worker pool<br/>~50 feeds]
     B --> C[db.get_seen_urls<br/>7-day window]
-    C --> D[ranker.cluster_and_score<br/>SequenceMatcher 0.78<br/>w¹·³ / h¹·⁴ + cross·3]
+    C --> D[ranker.cluster_and_score<br/>SequenceMatcher 0.78<br/>highest-weight rep wins]
     D --> E[apply_quotas<br/>ai 5 / bio 4 / vc 4]
     E --> F[prefilter top 40]
     F --> G[enricher.enrich_all<br/>og:image + body 2000c<br/>only if RSS &lt; 250c]
     G --> H[summarizer.summarize<br/>2 × 6-story batches<br/>strict JSON, temp=0]
     H --> I[validator<br/>reject hedging/empty]
-    I --> J[writer.build_note<br/>Top 5 + AI/Bio/VC + Quick Hits]
+    I --> J[writer.build_note<br/>continuing + paper pins<br/>+ entity-grouped Quick Hits]
     J --> K[(Obsidian vault)]
-    J --> L[db.mark_seen]
+    J --> L[db.mark_seen<br/>db.save_daily_entities]
 
     classDef stage fill:#1e293b,stroke:#475569,color:#f8fafc
     classDef io fill:#0f766e,stroke:#0d9488,color:#f0fdfa
@@ -199,12 +217,12 @@ launchctl bootout gui/$(id -u)/com.secondbrain.dailynews
 TechBriefer/
 ├── main.py            ← orchestrator (--force, --dry-run, stage timings)
 ├── scraper.py         ← concurrent RSS fetch
-├── ranker.py          ← heuristic score + cluster + quotas
+├── ranker.py          ← heuristic score + cluster (highest-weight rep) + quotas
 ├── enricher.py        ← og:image + article body
 ├── summarizer.py      ← strict JSON LLM call + validator
 ├── entities.py        ← regex wikilink extraction
-├── writer.py          ← Markdown builder
-├── db.py              ← SQLite 7-day dedup
+├── writer.py          ← Markdown builder, paper pins, entity-grouped Quick Hits
+├── db.py              ← SQLite 7-day dedup + 14-day daily entity log
 ├── config.yaml        ← all knobs
 ├── sources.yaml       ← 53 feeds, weighted by trust
 ├── requirements.txt   ← feedparser, requests, beautifulsoup4, openai, pyyaml

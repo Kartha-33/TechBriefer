@@ -30,25 +30,37 @@ def _score(story, weights: dict) -> float:
     return (w ** 1.3) / ((hours + 2.0) ** 1.4) + story.cross_mention * 3.0
 
 
+def _weight_of(story, weights: dict) -> int:
+    return int(weights.get(story.source, story.weight or DEFAULT_WEIGHT))
+
+
 def cluster_and_score(stories: list, weights: dict) -> list:
-    """O(N^2) title clustering at SequenceMatcher >= 0.78. Within a cluster the
-    representative gets cross_mention = (cluster_size - 1)."""
+    """O(N^2) title clustering at SequenceMatcher >= 0.78.
+
+    Within each cluster the **highest-weighted** source represents it; lower-
+    weighted near-duplicates (e.g., a TechCrunch recap of a DeepMind blog post)
+    are dropped from the output so the brief always points at the primary
+    source. The representative still keeps a ``cross_mention`` bonus equal to
+    the number of dropped peers, so cross-feed coverage continues to surface
+    in the score."""
+    norms = [_normalize(s.title) for s in stories]
     used: set[int] = set()
     out = []
-    norms = [_normalize(s.title) for s in stories]
-    for i, s1 in enumerate(stories):
+    for i in range(len(stories)):
         if i in used:
             continue
-        members = 0
+        cluster = [i]
         for j in range(i + 1, len(stories)):
             if j in used:
                 continue
             if SequenceMatcher(None, norms[i], norms[j]).ratio() >= CLUSTER_THRESHOLD:
+                cluster.append(j)
                 used.add(j)
-                members += 1
-        s1.cross_mention = members
-        s1.base_score = _score(s1, weights)
-        out.append(s1)
+        rep_idx = max(cluster, key=lambda k: _weight_of(stories[k], weights))
+        rep = stories[rep_idx]
+        rep.cross_mention = len(cluster) - 1
+        rep.base_score = _score(rep, weights)
+        out.append(rep)
     out.sort(key=lambda s: s.base_score, reverse=True)
     return out
 
