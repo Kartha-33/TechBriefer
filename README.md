@@ -1,74 +1,115 @@
 # TechBriefer
 
-A small, hallucination-proof daily news pipeline that pulls from ~50
-high-trust RSS feeds, ranks stories by relevance + recency + source trust,
-and writes a Markdown brief into your Obsidian vault every morning.
+> **A hallucination-proof daily news pipeline for your Obsidian vault.**
+> 50+ trust-weighted RSS feeds → concurrent scrape → heuristic rank → strict-JSON local LLM summary → two-tier Markdown brief, every morning, in under 4 minutes.
 
-The whole thing runs locally on your machine. No paid APIs, no embeddings,
-no cloud — just `feedparser`, `requests`, `BeautifulSoup`, and a local Ollama
-model for the 2-sentence summaries.
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![Ollama](https://img.shields.io/badge/LLM-Ollama%20local-black)](https://ollama.com/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Wall clock](https://img.shields.io/badge/wall%20clock-%E2%89%A4%204%20min-success)]()
+[![No paid APIs](https://img.shields.io/badge/paid%20APIs-0-orange)]()
+
+---
 
 ## What you get
 
-A note like `01 Daily Briefs/2026-04-26 Tech Brief.md` with five sections:
+A note like `01 Daily Briefs/2026-04-26 Tech Brief.md` that opens in Obsidian with five clean sections:
 
-1. **Top Stories** — the 5 highest-scored stories of the day, with images
-   and 2-sentence LLM summaries
-2. **AI & Machine Learning** — 5 stories with summaries
-3. **Biology & Life Sciences** — 4 stories with summaries
-4. **Startups & Venture Capital** — 4 stories with summaries
-5. **Quick Hits** — ~30 more stories from the prefilter pool, RSS-derived
-   one-liners (no LLM, so no hallucination risk)
+```
+─────────────────────────────────────────────
+   Second Brain Brief — Sun, Apr 26, 2026
+   35 stories · 47 sources · 3m 26s
+─────────────────────────────────────────────
 
-Stories link to the original sources, include `[[wikilinks]]` for entities
-the regex finds (people, orgs, topics), and tag the source name so you can
-trace anything you read.
+  Top Stories          5  · image + 2-sentence LLM summary
+  AI & ML              5  · 2-sentence LLM summary
+  Biology & Life Sci   4  · 2-sentence LLM summary
+  Startups & VC        4  · 2-sentence LLM summary
+  Quick Hits          ~25 · RSS-derived one-liner (no LLM)
+```
 
-## Why it doesn't hallucinate
+Every story links back to the original source, gets `[[wikilinks]]` for any
+people / orgs / topics the regex catches, and shows which feed it came from
+so you can audit anything you read.
 
-- The LLM **never sees URLs or Markdown**. It only sees `id`, source name,
-  title, and 600 chars of grounding text. Python maps the returned `i` back
-  to the story it sent in.
-- `temperature=0`, `response_format={"type": "json_object"}`, max
-  320-character summaries.
-- A validator rejects empty / too-short / too-long / hedging / refusal /
-  Reddit-boilerplate / `INSUFFICIENT` outputs and falls back to the cleaned
-  RSS summary.
-- `og:image` / `twitter:image` are only accepted if they start with
-  `https://`. The LLM never picks images.
-- A 7-day SQLite dedup table (`history.db`, gitignored) prevents the same
-  story from repeating across runs.
-- Sources are a closed set in `sources.yaml`. The LLM can never widen it.
+---
 
 ## Pipeline
 
-```
-scraper.fetch_all          (10-worker ThreadPool, ~5-10s for 50 feeds)
-  └─> db.get_seen_urls(7d)
-        └─> ranker.cluster_and_score   (SequenceMatcher 0.78 + heuristic)
-              └─> ranker.apply_quotas  (ai 5 / biology 4 / startups 4)
-                    └─> prefilter top 40
-                          └─> enricher.enrich_all  (og:image + body 2000c)
-                                └─> summarizer.summarize  (2 batches × 6
-                                     stories, single grounded JSON call each)
-                                      └─> validate
-                                            └─> writer.build_note
-                                                  └─> write to Obsidian vault
-                                                        └─> db.mark_seen
+```mermaid
+flowchart LR
+    A([main.py]) --> B[scraper.fetch_all<br/>10-worker pool<br/>~50 feeds]
+    B --> C[db.get_seen_urls<br/>7-day window]
+    C --> D[ranker.cluster_and_score<br/>SequenceMatcher 0.78<br/>w¹·³ / h¹·⁴ + cross·3]
+    D --> E[apply_quotas<br/>ai 5 / bio 4 / vc 4]
+    E --> F[prefilter top 40]
+    F --> G[enricher.enrich_all<br/>og:image + body 2000c<br/>only if RSS &lt; 250c]
+    G --> H[summarizer.summarize<br/>2 × 6-story batches<br/>strict JSON, temp=0]
+    H --> I[validator<br/>reject hedging/empty]
+    I --> J[writer.build_note<br/>Top 5 + AI/Bio/VC + Quick Hits]
+    J --> K[(Obsidian vault)]
+    J --> L[db.mark_seen]
+
+    classDef stage fill:#1e293b,stroke:#475569,color:#f8fafc
+    classDef io fill:#0f766e,stroke:#0d9488,color:#f0fdfa
+    class B,C,D,E,F,G,H,I,J stage
+    class A,K,L io
 ```
 
-The whole thing runs in 2–4 minutes on a Mac with `llama3.2` (3B) under
-Ollama.
+### Stage timings (typical, llama3.2 3B on Apple Silicon)
+
+| Stage | Time |
+|---|---|
+| Concurrent RSS fetch (50+ feeds, 10 workers) | 5–10 s |
+| Rank + cluster + quotas + prefilter | < 6 s |
+| Selective article enrichment (≤12 fetches) | 1–5 s |
+| **LLM summaries** (2 batches of 6, strict JSON) | **180–210 s** |
+| Markdown build + file write | < 1 s |
+| **Total** | **~3–4 min** |
+
+---
+
+## Why it doesn't hallucinate
+
+| Risk | Mechanism |
+|---|---|
+| LLM invents URLs | LLM never sees URLs. Returns `{"i": 3, ...}`; Python maps `i` back to the story it sent in. |
+| LLM invents titles | Same — Python uses its own RSS title for rendering. |
+| LLM fabricates facts | Prompt: *"Use ONLY information in the provided text."* `temperature=0`, `response_format=json_object`. |
+| Hedging / refusals slip through | Validator rejects empty / >320 chars / contains `I think \| may be \| cannot \| knowledge cutoff \| as an AI \| sorry`. Falls back to a cleaned RSS summary. |
+| Future dates / made-up numbers | LLM never sees "today". The grounding text is its only fact source. |
+| Image hallucination | Images come from `og:image` / `twitter:image` only, must start with `https://`. LLM never picks images. |
+| Cross-batch confusion | Stories are batched in groups of 6 with `=== STORY N ===` delimiters so the small model never mixes indices. |
+| Repeat stories | 7-day SQLite dedup table (`history.db`, gitignored). |
+| Source widening | Sources are a closed set in `sources.yaml`. The LLM cannot add to it. |
+
+---
+
+## Sources
+
+53 feeds out of the box, weighted to bias toward primary research and
+canonical AI labs. Edit `sources.yaml` to add, remove, or retune.
+
+| Category | Feeds |
+|---|---|
+| **AI primary research** | arXiv (cs.AI / cs.LG / cs.CL / cs.CV) |
+| **AI labs** | OpenAI · DeepMind · Google AI · Microsoft Research · Hugging Face · Allen AI · BAIR · MIT CSAIL · MIT News AI |
+| **AI analysts / blogs** | Karpathy · Lilian Weng · Chip Huyen · Eugene Yan · The Gradient · Towards Data Science · Ars Technica AI · ScienceDaily AI |
+| **Biology research** | bioRxiv · medRxiv · arXiv q-bio · Nature Biotech / Methods / Medicine · Cell · Cell Systems · Science Translational Medicine · PLoS Comp Bio |
+| **Biology analysts** | Eric Topol · STAT News · FierceBiotech · Quanta Magazine · ScienceDaily Genetics |
+| **Startups / VC** | Paul Graham · Stratechery · Sequoia · YC · Elad Gil · Lenny's Newsletter · Not Boring · Crunchbase · TechCrunch · Benedict Evans · Balaji · Marginal Revolution · The Diff |
+| **Reddit (upvote-gated)** | r/MachineLearning (≥200) · r/LocalLLaMA (≥150) · r/biotech (≥100) · r/startups (≥100) |
+
+---
 
 ## Setup
 
 ### Prerequisites
 
 - Python 3.10+
-- [Ollama](https://ollama.com) installed and running (`ollama serve`)
-- The `llama3.2` model pulled: `ollama pull llama3.2`
-- An Obsidian vault somewhere (anywhere — you'll point at it in
-  `config.yaml`)
+- [Ollama](https://ollama.com) running locally (`ollama serve`)
+- `ollama pull llama3.2` (any 3B+ instruct model works; edit `config.yaml`)
+- An Obsidian vault somewhere on disk
 
 ### Install
 
@@ -81,7 +122,7 @@ python3 -m venv .venv
 
 ### Configure
 
-Open `config.yaml` and update `obsidian.vault_path` to point at your vault:
+Open `config.yaml` and point `obsidian.vault_path` at your vault:
 
 ```yaml
 obsidian:
@@ -89,76 +130,91 @@ obsidian:
   daily_notes_folder: "01 Daily Briefs"
 ```
 
-The other defaults (LLM model, scraper timeouts, pipeline sizes, category
-quotas) work out of the box. Edit `sources.yaml` to add or remove feeds and
-to retune the per-feed `weight`.
+Defaults for the LLM, scraper, pipeline sizes, and category quotas work out
+of the box.
 
-### Try it once
+### Run it once
 
 ```bash
 .venv/bin/python3 main.py --force
 ```
 
-`--force` ignores the 7-day seen-URL filter so you can run it twice in a row
-while testing. `--dry-run` skips the LLM call and the file write.
+| Flag | Effect |
+|---|---|
+| `--force` | Ignore the 7-day seen-URL filter (handy when iterating) |
+| `--dry-run` | Skip the LLM call and the file write; just preview the brief |
 
-After a couple of minutes you should see the brief at
-`<your-vault>/01 Daily Briefs/YYYY-MM-DD Tech Brief.md`.
+After ~3 minutes you'll see `<your-vault>/01 Daily Briefs/YYYY-MM-DD Tech Brief.md`.
 
-### Schedule it (macOS)
+---
 
-There's a `launchd` template at `com.secondbrain.dailynews.plist.template`.
-Copy it to `~/Library/LaunchAgents/com.secondbrain.dailynews.plist`, replace
-every `REPLACE_WITH_YOUR_PATH` with the absolute path to your local clone,
-then load it:
+## Schedule
+
+### macOS (launchd)
+
+A template lives at `com.secondbrain.dailynews.plist.template`. Replace the
+`REPLACE_WITH_YOUR_PATH` markers with the absolute path to your clone, drop
+it into `~/Library/LaunchAgents/`, and load it:
 
 ```bash
-cp com.secondbrain.dailynews.plist.template \
-   ~/Library/LaunchAgents/com.secondbrain.dailynews.plist
-# edit the file: replace REPLACE_WITH_YOUR_PATH with e.g. /Users/<you>/code/TechBriefer
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.secondbrain.dailynews.plist
+sed "s|REPLACE_WITH_YOUR_PATH|$(pwd)|g" \
+    com.secondbrain.dailynews.plist.template \
+    > ~/Library/LaunchAgents/com.secondbrain.dailynews.plist
+
+launchctl bootstrap gui/$(id -u) \
+    ~/Library/LaunchAgents/com.secondbrain.dailynews.plist
 ```
 
-It will fire at 07:00 every morning. Logs go to `/tmp/secondbrain.log` and
-`/tmp/secondbrain.err`.
+Fires at 07:00 every morning. Logs land in `/tmp/secondbrain.log` and
+`/tmp/secondbrain.err`. Stop it with:
 
-To stop it: `launchctl bootout gui/$(id -u)/com.secondbrain.dailynews`.
+```bash
+launchctl bootout gui/$(id -u)/com.secondbrain.dailynews
+```
 
-### Schedule it (Linux)
-
-Add a crontab entry:
+### Linux (cron)
 
 ```cron
 0 7 * * * cd /path/to/TechBriefer && .venv/bin/python3 main.py >> /tmp/secondbrain.log 2>&1
 ```
 
-## Files
+---
 
-| File | Purpose |
+## Tuning
+
+| Want to … | Edit |
 |---|---|
-| `sources.yaml` | 50+ trust-weighted RSS feeds + Reddit feeds with upvote gating |
-| `config.yaml` | Vault path, Ollama settings, scraper / pipeline / quota config |
-| `db.py` | SQLite seen-story history (7-day dedup, 30-day janitor) |
-| `scraper.py` | Concurrent RSS fetch via `requests` + `feedparser`; HTML-decoded summaries; in-pass URL dedup |
-| `ranker.py` | Heuristic-only score `w**1.3 / (h+2)**1.4 + cross_mention*3`; `SequenceMatcher` clustering at 0.78; category quotas |
-| `enricher.py` | Concurrent article fetch; only when RSS summary < 250 chars; pulls `og:image` and 2000 chars of body |
-| `summarizer.py` | 2 batches of 6 stories; strict JSON output; per-story grounding; Python-side validator and fallback |
-| `entities.py` | Regex over PEOPLE / ORGS / TOPICS, up to 6 `[[wikilinks]]` per story |
-| `writer.py` | Builds the Markdown brief; sections overflow into the quick pool with RSS summaries when the LLM pool runs short |
-| `main.py` | Orchestrator with `--force` and `--dry-run`, prints stage timings |
+| Add more sources | `sources.yaml` (add a `{name, url, category, weight}` entry) |
+| Bias toward one publication | Bump its `weight` in `sources.yaml` (5 = noise floor, 10 = top journal) |
+| Make a section bigger | Bump `quotas.<category>` in `config.yaml` |
+| Get deeper LLM coverage | Bump `pipeline.top_deep` (each +6 adds ~90 s to the run) |
+| Switch the model | Change `llm.model` to any model Ollama serves locally |
+| Tighten / loosen dedup window | `pipeline.history_days` (default: 7) |
 
-## Tuning notes
+---
 
-- **Want more stories per section?** Bump `quotas.ai`, `quotas.biology`, or
-  `quotas.startups` in `config.yaml`.
-- **Want deeper LLM coverage?** Bump `pipeline.top_deep` (current: 12). Each
-  extra batch of 6 stories adds roughly 90s to the run.
-- **Want a different model?** Change `llm.model` in `config.yaml` to any
-  Ollama-served model; the rest of the pipeline doesn't care.
-- **A feed is failing?** Watch the `WARNING` log lines from the scraper.
-  Most failures are stale URLs — search for the publication's current
-  feed URL and update `sources.yaml`. Reddit feeds need a real browser
-  User-Agent (already configured).
+## Project layout
+
+```
+TechBriefer/
+├── main.py            ← orchestrator (--force, --dry-run, stage timings)
+├── scraper.py         ← concurrent RSS fetch
+├── ranker.py          ← heuristic score + cluster + quotas
+├── enricher.py        ← og:image + article body
+├── summarizer.py      ← strict JSON LLM call + validator
+├── entities.py        ← regex wikilink extraction
+├── writer.py          ← Markdown builder
+├── db.py              ← SQLite 7-day dedup
+├── config.yaml        ← all knobs
+├── sources.yaml       ← 53 feeds, weighted by trust
+├── requirements.txt   ← feedparser, requests, beautifulsoup4, openai, pyyaml
+├── com.secondbrain.dailynews.plist.template  ← launchd schedule
+└── README.md
+```
+
+`history.db`, `.venv/`, and `__pycache__/` are gitignored.
+
+---
 
 ## License
 
