@@ -4,10 +4,10 @@
 
 feeds:
   # ---------- Primary AI/ML research ----------
-  - { name: "arXiv AI",                 url: "https://rss.arxiv.org/rss/cs.AI",                                category: ai,       weight: 10 }
-  - { name: "arXiv ML",                 url: "https://rss.arxiv.org/rss/cs.LG",                                category: ai,       weight: 10 }
-  - { name: "arXiv NLP",                url: "https://rss.arxiv.org/rss/cs.CL",                                category: ai,       weight: 9 }
-  - { name: "arXiv CV",                 url: "https://rss.arxiv.org/rss/cs.CV",                                category: ai,       weight: 9 }
+  - { name: "arXiv AI",                 url: "http://export.arxiv.org/api/query?search_query=cat:cs.AI&sortBy=submittedDate&sortOrder=descending&max_results=15", category: ai, weight: 10 }
+  - { name: "arXiv ML",                 url: "http://export.arxiv.org/api/query?search_query=cat:cs.LG&sortBy=submittedDate&sortOrder=descending&max_results=15", category: ai, weight: 10 }
+  - { name: "arXiv NLP",                url: "http://export.arxiv.org/api/query?search_query=cat:cs.CL&sortBy=submittedDate&sortOrder=descending&max_results=15", category: ai, weight: 9 }
+  - { name: "arXiv CV",                 url: "http://export.arxiv.org/api/query?search_query=cat:cs.CV&sortBy=submittedDate&sortOrder=descending&max_results=15", category: ai, weight: 9 }
 
   # ---------- Canonical AI labs ----------
   - { name: "OpenAI News",              url: "https://openai.com/news/rss.xml",                                category: ai,       weight: 9 }
@@ -33,7 +33,7 @@ feeds:
   # ---------- Primary biology research ----------
   - { name: "bioRxiv",                  url: "https://connect.biorxiv.org/biorxiv_xml.php?subject=all",        category: biology,  weight: 9 }
   - { name: "medRxiv",                  url: "https://connect.medrxiv.org/medrxiv_xml.php?subject=all",        category: biology,  weight: 9 }
-  - { name: "arXiv q-bio",              url: "https://rss.arxiv.org/rss/q-bio",                                category: biology,  weight: 9 }
+  - { name: "arXiv q-bio",              url: "http://export.arxiv.org/api/query?search_query=cat:q-bio&sortBy=submittedDate&sortOrder=descending&max_results=15", category: biology, weight: 9 }
   - { name: "Nature Biotechnology",     url: "https://www.nature.com/nbt.rss",                                 category: biology,  weight: 10 }
   - { name: "Nature Methods",           url: "https://www.nature.com/nmeth.rss",                               category: biology,  weight: 9 }
   - { name: "Nature Medicine",          url: "https://www.nature.com/nm.rss",                                  category: biology,  weight: 9 }

@@ -1,0 +1,44 @@
+# Per-author weight bonuses. Matched against the `<author>` field on each
+# RSS / Atom entry (case-insensitive substring match: "Karpathy" matches
+# "Andrej Karpathy", "by Andrej Karpathy", etc.).
+#
+# Bonus is added to the source weight when computing the score. Use sparingly:
+# +3 is roughly "this author writes from a top-tier venue regardless of the
+# feed they happen to be syndicated through." Cap is +5.
+#
+# Effective score = (source_weight + author_bonus) ** 1.3 / (hours+2)**1.4
+authors:
+  # AI / ML practitioners and analysts
+  - { match: "Andrej Karpathy",     bonus: 5 }
+  - { match: "Karpathy",            bonus: 5 }
+  - { match: "Lilian Weng",         bonus: 4 }
+  - { match: "Chip Huyen",          bonus: 4 }
+  - { match: "Eugene Yan",          bonus: 3 }
+  - { match: "Sebastian Ruder",     bonus: 3 }
+  - { match: "Yann LeCun",          bonus: 4 }
+  - { match: "Geoffrey Hinton",     bonus: 4 }
+  - { match: "Demis Hassabis",      bonus: 4 }
+  - { match: "Sam Altman",          bonus: 3 }
+  - { match: "Dario Amodei",        bonus: 4 }
+  - { match: "Ilya Sutskever",      bonus: 4 }
+  - { match: "François Chollet",    bonus: 3 }
+  - { match: "Francois Chollet",    bonus: 3 }
+
+  # Biology / medicine
+  - { match: "Eric Topol",          bonus: 4 }
+  - { match: "Jennifer Doudna",     bonus: 4 }
+  - { match: "George Church",       bonus: 4 }
+  - { match: "David Baker",         bonus: 4 }
+  - { match: "Noubar Afeyan",       bonus: 3 }
+
+  # Startups / VC / strategy
+  - { match: "Paul Graham",         bonus: 5 }
+  - { match: "Ben Thompson",        bonus: 4 }
+  - { match: "Stratechery",         bonus: 4 }
+  - { match: "Marc Andreessen",     bonus: 3 }
+  - { match: "Naval Ravikant",      bonus: 3 }
+  - { match: "Elad Gil",            bonus: 4 }
+  - { match: "Patrick Collison",    bonus: 3 }
+  - { match: "Lenny Rachitsky",     bonus: 3 }
+  - { match: "Packy McCormick",     bonus: 3 }
+  - { match: "Tyler Cowen",         bonus: 3 }

@@ -39,6 +39,20 @@ def _story_entities(s) -> list[str]:
     return extract_entities((s.title or "") + " " + (s.summary or ""))
 
 
+def _byline(s) -> str:
+    """`*Source: TechCrunch -- by Maxwell Zeff* (★)` when an author bonus fired,
+    `*Source: TechCrunch -- by Maxwell Zeff*` when we have an author but no
+    bonus, plain `*Source: TechCrunch*` otherwise."""
+    author = (getattr(s, "author", "") or "").strip()
+    bonus = int(getattr(s, "author_bonus", 0) or 0)
+    if author:
+        line = f"*Source: {s.source} -- by {author}*"
+        if bonus > 0:
+            line += "  (signal-boosted author)"
+        return line
+    return f"*Source: {s.source}*"
+
+
 def render_story(s, summaries: dict, show_image: bool = True) -> str:
     lines = [f"### [{s.title}]({s.url})"]
     if show_image and s.image_url and s.image_url.startswith("https://"):
@@ -51,7 +65,7 @@ def render_story(s, summaries: dict, show_image: bool = True) -> str:
     tags = _story_entities(s)
     if tags:
         lines.append("*" + " ".join(f"[[{t}]]" for t in tags) + "*")
-    lines.append(f"*Source: {s.source}*")
+    lines.append(_byline(s))
     return "\n\n".join(lines)
 
 
@@ -68,20 +82,26 @@ def _render_paper_pin(s, summaries: dict) -> str:
     tags = _story_entities(s)
     if tags:
         lines.append("*" + " ".join(f"[[{t}]]" for t in tags) + "*")
-    lines.append(f"*Source: {s.source}*")
+    lines.append(_byline(s))
     return "\n\n".join(lines)
 
 
-def _top_paper_for(category: str, deep: list, quick_hits: list, used: set) -> object | None:
-    """Highest-scored paper-domain story for `category` not already used."""
-    pool = [
-        s for s in (deep + quick_hits)
+def _top_paper_for(category: str, deep: list, quick_hits: list, paper_pool: list, used: set) -> object | None:
+    """Highest-scored paper-domain story for `category` not already used.
+
+    Searches the broader `paper_pool` (full ranked list) so a Friday arXiv
+    paper isn't crushed by the prefilter even though Sunday's blog posts
+    out-rank it on recency. Falls back to deep+quick_hits if `paper_pool`
+    is empty."""
+    pool = paper_pool if paper_pool else (deep + quick_hits)
+    candidates = [
+        s for s in pool
         if s.category == category and _is_paper(s) and s.url not in used
     ]
-    if not pool:
+    if not candidates:
         return None
-    pool.sort(key=lambda s: getattr(s, "base_score", 0.0), reverse=True)
-    return pool[0]
+    candidates.sort(key=lambda s: getattr(s, "base_score", 0.0), reverse=True)
+    return candidates[0]
 
 
 def _group_quick_hits(stories: list, max_groups: int = 6, min_size: int = 2) -> tuple[list[tuple[str, list]], list]:
@@ -118,9 +138,13 @@ def _group_quick_hits(stories: list, max_groups: int = 6, min_size: int = 2) -> 
 
 def _render_quick_hit_line(s) -> str:
     blurb = _clean(s.summary or "", 120)
+    src = s.source
+    if int(getattr(s, "author_bonus", 0) or 0) > 0 and (s.author or "").strip():
+        src = f"{s.source} - {s.author}"
+    tail = f"*({src})*"
     if blurb:
-        return f"- **[{s.title}]({s.url})** — {blurb} *({s.source})*"
-    return f"- **[{s.title}]({s.url})** *({s.source})*"
+        return f"- **[{s.title}]({s.url})** -- {blurb} {tail}"
+    return f"- **[{s.title}]({s.url})** {tail}"
 
 
 def build_note(
@@ -130,6 +154,7 @@ def build_note(
     config: dict,
     total_sources: int,
     continuing_entities: list[str] | None = None,
+    paper_pool: list | None = None,
 ) -> str:
     """Render the brief.
 
@@ -139,15 +164,19 @@ def build_note(
                     the Quick Hits roundup at the bottom (RSS-only).
     `continuing_entities` -- entities that appeared in yesterday's brief and
                     again in today's top stories. Rendered as a one-line
-                    "Continuing from yesterday" block at the top."""
+                    "Continuing from yesterday" block at the top.
+    `paper_pool` -- the full ranked list (pre-prefilter) used to find the
+                    Featured Paper for AI and Biology, so a Friday arXiv paper
+                    can be pinned even on a Sunday when fresher blog posts
+                    out-score it."""
     now = datetime.now()
     used: set[str] = set()
     quotas = config.get("quotas", {})
 
-    ai_paper = _top_paper_for("ai", deep, quick_hits, used)
+    ai_paper = _top_paper_for("ai", deep, quick_hits, paper_pool or [], used)
     if ai_paper:
         used.add(ai_paper.url)
-    bio_paper = _top_paper_for("biology", deep, quick_hits, used)
+    bio_paper = _top_paper_for("biology", deep, quick_hits, paper_pool or [], used)
     if bio_paper:
         used.add(bio_paper.url)
 

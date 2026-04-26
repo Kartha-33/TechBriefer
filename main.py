@@ -27,10 +27,18 @@ import writer
 from entities import extract_entities
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
+AUTHORS_PATH = Path(__file__).parent / "authors.yaml"
 
 
 def _load_config() -> dict:
     return yaml.safe_load(CONFIG_PATH.read_text())
+
+
+def _load_author_rules() -> list:
+    if not AUTHORS_PATH.exists():
+        return []
+    data = yaml.safe_load(AUTHORS_PATH.read_text()) or {}
+    return data.get("authors", []) or []
 
 
 def _build_client(cfg: dict):
@@ -62,10 +70,16 @@ def run(force: bool = False, dry_run: bool = False) -> None:
 
     sources_def = scraper.load_sources()
     weights = _build_weights(sources_def)
+    author_rules = _load_author_rules()
 
     t1 = time.time()
-    ranked = ranker.cluster_and_score(fresh, weights)
-    print(f"[3/7] Ranked {len(ranked)} stories ({time.time()-t1:.1f}s)")
+    ranked = ranker.cluster_and_score(fresh, weights, author_rules)
+    boosted = [s for s in ranked if int(getattr(s, "author_bonus", 0) or 0) > 0]
+    print(f"[3/7] Ranked {len(ranked)} stories ({time.time()-t1:.1f}s)"
+          + (f" - {len(boosted)} author-boosted" if boosted else ""))
+    if boosted[:5]:
+        for s in boosted[:5]:
+            print(f"      ★ +{s.author_bonus} {s.author} ({s.source}): {s.title[:70]}")
 
     quota_ordered = ranker.apply_quotas(ranked, quotas)
     prefilter_n = int(pipeline.get("prefilter_top", 35))
@@ -109,6 +123,7 @@ def run(force: bool = False, dry_run: bool = False) -> None:
         config=cfg,
         total_sources=len({s.source for s in all_stories}),
         continuing_entities=continuing,
+        paper_pool=ranked,
     )
     if dry_run:
         print("[7/7] --dry-run: not writing file. Preview:\n")

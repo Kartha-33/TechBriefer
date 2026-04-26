@@ -42,6 +42,8 @@ class Story:
     base_score: float = 0.0
     cross_mention: int = 0
     weight: int = 5
+    author: str = ""
+    author_bonus: int = 0
 
 
 def _parse_date(entry) -> datetime | None:
@@ -94,6 +96,25 @@ def _entry_summary(entry) -> str:
         if isinstance(c, list) and c:
             raw = c[0].get("value", "")
     return _clean_summary(raw)
+
+
+def _entry_author(entry) -> str:
+    """Best-effort author extraction across feed flavors. Atom/arXiv puts the
+    primary author in `entry.author` (string). Some RSS feeds expose
+    `entry.authors` (list of dicts with 'name')."""
+    a = getattr(entry, "author", None)
+    if isinstance(a, str) and a.strip():
+        return a.strip()
+    authors = getattr(entry, "authors", None)
+    if isinstance(authors, list) and authors:
+        first = authors[0]
+        if isinstance(first, dict):
+            name = first.get("name") or ""
+            if name:
+                return name.strip()
+        elif isinstance(first, str):
+            return first.strip()
+    return ""
 
 
 def _reddit_score(entry, min_score: int) -> bool:
@@ -150,6 +171,7 @@ def _fetch_feed(src: dict, articles_per_feed: int, timeout: int) -> list[Story]:
                     summary=_entry_summary(e),
                     published_at=_parse_date(e),
                     weight=weight,
+                    author=_entry_author(e),
                 )
             )
     except requests.RequestException as ex:

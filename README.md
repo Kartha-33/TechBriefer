@@ -42,6 +42,14 @@ so you can audit anything you read.
 - **Featured paper pin** — within AI and Biology, the highest-scored
   preprint from arXiv / bioRxiv / medRxiv is pulled to the top of the
   section and labeled, so research never gets buried under blog posts.
+  The pin searches the *full ranked list* (not just the top-40 prefilter),
+  so a Friday arXiv paper still gets pinned on a Sunday brief when fresher
+  blog posts out-rank it on recency alone.
+- **Author-weighted scoring** — a separate `authors.yaml` adds bonus weight
+  to specific bylines (Karpathy, Topol, Ben Thompson, Tyler Cowen, Lenny,
+  Packy, Paul Graham, Lilian Weng, etc.), so signal stays surfaced regardless
+  of which feed it happens to publish through. Boosted stories are tagged
+  inline with `(signal-boosted author)` in the brief.
 - **Cluster dedup** — when 3 sources cover the same launch, the brief shows
   it once, picking the highest-trust source (e.g., DeepMind's blog over a
   TechCrunch recap). The cross-feed coverage still boosts the score, so
@@ -110,7 +118,7 @@ canonical AI labs. Edit `sources.yaml` to add, remove, or retune.
 
 | Category | Feeds |
 |---|---|
-| **AI primary research** | arXiv (cs.AI / cs.LG / cs.CL / cs.CV) |
+| **AI primary research** | arXiv (cs.AI / cs.LG / cs.CL / cs.CV) — via `export.arxiv.org/api/query`, so available 7 days a week |
 | **AI labs** | OpenAI · DeepMind · Google AI · Microsoft Research · Hugging Face · Allen AI · BAIR · MIT CSAIL · MIT News AI |
 | **AI analysts / blogs** | Karpathy · Lilian Weng · Chip Huyen · Eugene Yan · The Gradient · Towards Data Science · Ars Technica AI · ScienceDaily AI |
 | **Biology research** | bioRxiv · medRxiv · arXiv q-bio · Nature Biotech / Methods / Medicine · Cell · Cell Systems · Science Translational Medicine · PLoS Comp Bio |
@@ -204,6 +212,7 @@ launchctl bootout gui/$(id -u)/com.secondbrain.dailynews
 |---|---|
 | Add more sources | `sources.yaml` (add a `{name, url, category, weight}` entry) |
 | Bias toward one publication | Bump its `weight` in `sources.yaml` (5 = noise floor, 10 = top journal) |
+| Boost a specific author | Add `{ match: "Their Name", bonus: 3 }` to `authors.yaml` |
 | Make a section bigger | Bump `quotas.<category>` in `config.yaml` |
 | Get deeper LLM coverage | Bump `pipeline.top_deep` (each +6 adds ~90 s to the run) |
 | Switch the model | Change `llm.model` to any model Ollama serves locally |
@@ -225,6 +234,7 @@ TechBriefer/
 ├── db.py              ← SQLite 7-day dedup + 14-day daily entity log
 ├── config.yaml        ← all knobs
 ├── sources.yaml       ← 53 feeds, weighted by trust
+├── authors.yaml       ← per-author weight bonuses (Karpathy, Topol, …)
 ├── requirements.txt   ← feedparser, requests, beautifulsoup4, openai, pyyaml
 ├── com.secondbrain.dailynews.plist.template  ← launchd schedule
 └── README.md
