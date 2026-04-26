@@ -1,27 +1,5 @@
-# Daily News Agent — Python dependencies
-# Install with: pip install -r requirements.txt
-
-# RSS feed parsing
-feedparser>=6.0.11
-
-# HTTP requests (fetch articles, call Ollama)
+feedparser>=6.0.10
+PyYAML>=6.0
 requests>=2.31.0
-
-# HTML parsing (extract article text from web pages)
-beautifulsoup4>=4.12.3
-lxml>=5.2.1
-
-# YAML config file parsing
-PyYAML>=6.0.1
-
-# Markdown and text utilities
-markdownify>=0.12.1
-
-# OpenAI-compatible API client (works for Ollama, Kimi, GLM, Groq, etc.)
+beautifulsoup4>=4.12.0
 openai>=1.30.0
-
-# Rich terminal output (pretty progress bars and colours when running manually)
-rich>=13.7.1
-
-# Date/time handling
-python-dateutil>=2.9.0

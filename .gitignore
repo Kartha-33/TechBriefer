@@ -4,29 +4,35 @@ __pycache__/
 *$py.class
 *.so
 .Python
+
+# Virtual environments
 .venv/
 venv/
 env/
 ENV/
 
+# Pipeline state (local SQLite history of seen stories)
+history.db
+*.sqlite
+*.sqlite3
+
+# Secrets / local configuration
+.env
+.env.*
+config.local.yaml
+
 # Logs
 *.log
-logs/
+secondbrain.log
+secondbrain.err
 
-# Config with sensitive data (users copy from .example)
-config.yaml
-
-# macOS
+# OS
 .DS_Store
-.AppleDouble
-.LSOverride
+Thumbs.db
 
-# IDEs
-.vscode/
+# Editor/IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
-
-# Obsidian vault (not part of the agent)
-*.obsidian/

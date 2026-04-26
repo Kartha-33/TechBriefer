@@ -1,0 +1,28 @@
+# Second Brain — daily news pipeline config.
+# All paths are expanded with ~ at runtime.
+
+obsidian:
+  vault_path: "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Second Brain"
+  daily_notes_folder: "01 Daily Briefs"
+
+llm:
+  provider: ollama
+  base_url: "http://localhost:11434/v1"
+  model: "llama3.2"
+  temperature: 0.0
+
+scraper:
+  timeout_seconds: 10
+  articles_per_feed: 5
+  max_workers: 10
+
+pipeline:
+  history_days: 7
+  prefilter_top: 40
+  top_deep: 12
+  quick_hits: 30
+
+quotas:
+  ai: 5
+  biology: 4
+  startups: 4

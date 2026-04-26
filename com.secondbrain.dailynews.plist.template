@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.secondbrain.dailynews</string>
+
+    <!--
+      Replace REPLACE_WITH_YOUR_PATH with the absolute path to your local
+      clone of this repo, e.g. /Users/<your-username>/code/TechBriefer
+      Then save this file as ~/Library/LaunchAgents/com.secondbrain.dailynews.plist
+      and run:
+        launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.secondbrain.dailynews.plist
+    -->
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>REPLACE_WITH_YOUR_PATH/.venv/bin/python3</string>
+        <string>REPLACE_WITH_YOUR_PATH/main.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>REPLACE_WITH_YOUR_PATH</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/secondbrain.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/secondbrain.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
